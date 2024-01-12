@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:dbserver="http://www.mulesoft.org/schema/mule/dbserver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+http://www.mulesoft.org/schema/mule/dbserver http://www.mulesoft.org/schema/mule/dbserver/current/mule-dbserver.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<munit:config name="new-test-suite.xml" />
+	<dbserver:config name="MUnit_DB_Server_Config" doc:name="MUnit DB Server Config" doc:id="1fcca53c-7dec-40a2-b57b-6718bc0487c5" >
+		<dbserver:connection csv="esempio.csv" database="postgres" connectionStringParameters="MODE=PostgreSQL"/>
+	</dbserver:config>
+	<db:config name="MUnit_DB_Config">
+        <db:generic-connection driverClassName="org.h2.Driver" url="jdbc:h2:tcp://localhost/mem:postgres"/>
+    </db:config>
+	<munit:test name="new-test-suite-getUsersTest" doc:id="4e3385cc-1e9a-4db3-be25-5d8252ba52fe" description="Test">
+		<munit:execution >
+			<munit:set-event doc:name="Set Event" doc:id="3921f1a1-c5d7-4e10-86bb-b0a4fda85c84" >
+				<munit:attributes value='#[{"uriParams": {"user_id": 3}}]' />
+			</munit:set-event>
+			<flow-ref doc:name="Flow-ref to getUsers" doc:id="66abe722-2dbb-44dc-839e-8e7265c1a913" name="getUsers"/>
+		</munit:execution>
+		<munit:validation>
+			<logger level="INFO" doc:name="Logger" doc:id="916eb284-548c-4b05-b302-8bcacf359e47" message="#[payload]"/>
+			<munit-tools:assert-that doc:name="Assert that" doc:id="78ccf73d-1319-43d9-962c-f85927afc4fd" expression="#[payload.user_id]" is="#[MunitTools::equalTo([3])]"/>
+		</munit:validation>
+	</munit:test>
+	<munit:before-test name="new-test-suiteBefore_Test" doc:id="63a0901e-7ed5-44ea-a074-93b27e8e428c" >
+		<dbserver:execute doc:name="Execute" doc:id="dd55c22b-ac15-4c64-a665-c5358541057c" config-ref="MUnit_DB_Server_Config" sql="insert into esempio (user_id,user_firstname, user_email, user_age, user_birthdate) values (11,'Mario', 'emailprova2@gmail.com', 15, '2008-12-10');"/>
+	</munit:before-test>
+	<munit:test name="new-test-suiteTest" doc:id="8f380589-d150-404c-a4fb-08c496ee0abc" >
+		<munit:validation >
+			<dbserver:execute-query doc:name="Execute query" doc:id="f3af9ed4-c731-4c7d-84b3-4c115906521a" config-ref="MUnit_DB_Server_Config" sql="select * from esempio"/>
+			<logger level="INFO" doc:name="Logger" doc:id="5474b704-2693-4879-b1ae-079f9db49f83" message="#[payload]"/>
+			<dbserver:validate-that doc:name="Validate that" doc:id="0cc5dc35-b0c1-4800-bb8b-ba0b6cb9368e" config-ref="MUnit_DB_Server_Config" query="select * from esempio where user_id = 3" returns='"USER_ID","USER_FIRSTNAME","USER_EMAIL","USER_AGE","USER_BIRTHDATE"\n"3","Mario","emailprova2@gmail.com","15","2008-12-10"' />
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

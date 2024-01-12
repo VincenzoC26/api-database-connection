@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="getUsers" doc:id="460cbb5a-ed9c-4c5e-9e22-35ea6a3f2b8d" >
+		<http:listener doc:name="GET /users" doc:id="7458833e-f4cd-49ee-97b4-5b518bc0dfb7" config-ref="HTTP_Listener_config" path="/users/{user_id}" allowedMethods="GET"/>
+		<set-variable value="#[attributes.uriParams.user_id]" doc:name="user_id" doc:id="c9cecbb1-f8b8-429e-a559-41c4a289f6f7" variableName="user_id"/>
+		<db:select doc:name="Select users from db" doc:id="4c61d049-447e-4a59-9a47-5794fd1e7f4c" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT *
+FROM esempio.users u
+WHERE u.user_id = :user_id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{"user_id": vars.user_id as Number}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="JSON output" doc:id="74402b49-2919-43b2-a915-e51c15abf616" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="createUser" doc:id="6d609cd4-8a47-45bf-91e5-fe1a1add8911" >
+		<http:listener doc:name="POST /storedP" doc:id="b62763c8-7b66-4d38-a334-373f903ecb15" config-ref="HTTP_Listener_config" path="/storedP" allowedMethods="POST"/>
+		<db:stored-procedure doc:name="create user" doc:id="04d99e23-f9f1-49b1-9d46-6a74306c4eaa" config-ref="Database_Config" target="output">
+			<db:sql ><![CDATA[call esempio.insert_test(:firstname, :email, :age, :birthdate)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+    "firstname": payload.firstname,
+	"email": payload.email,
+	"age": payload.age,
+	"birthdate": payload.birthdate
+}]]]></db:input-parameters>
+		</db:stored-procedure>
+		<ee:transform doc:name="JSON output" doc:id="3c1f25fa-1fba-4fa7-a252-3bbb5460ce3a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "Utente aggiunto con successo!",
+	"output": vars."output",
+	"user": payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
